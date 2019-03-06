@@ -3,11 +3,10 @@
  * Function: 二维码扫描界面
  * Desc:
  */
-import React, {Component} from 'react';
+import React, { Component } from 'react';
 import PropTypes from 'prop-types';
-import Camera from 'react-native-camera';
-import
-{
+import Camera, { RNCamera } from 'react-native-camera';
+import {
     ActivityIndicator,
     StyleSheet,
     Platform,
@@ -15,7 +14,9 @@ import
     Animated,
     Easing,
     Text,
-    Image
+    Image,
+    SafeAreaView,
+    NativeModules
 } from 'react-native';
 
 const IS_ANDROID = Platform.OS === 'android';
@@ -44,9 +45,9 @@ class QRScannerRectView extends Component {
         scanBarHeight: 1.5,
         scanBarMargin: 6,
         hintText: '将二维码/条码放入框内，即可自动扫描',
-        hintTextStyle: {color: '#fff', fontSize: 14,backgroundColor:'transparent'},
+        hintTextStyle: { color: '#fff', fontSize: 14, backgroundColor: 'transparent' },
         hintTextPosition: 130,
-        isShowScanBar:true
+        isShowScanBar: true
     };
 
     constructor(props) {
@@ -211,32 +212,32 @@ class QRScannerRectView extends Component {
 
     //绘制扫描线
     _renderScanBar() {
-      if(!this.props.isShowScanBar) return;
+        if (!this.props.isShowScanBar) return;
         if (this.props.scanBarImage) {
-            return <Image style={ {resizeMode: 'contain', width: this.getScanImageWidth()}}
-                          source={this.props.scanBarImage}/>
+            return <Image style={{ resizeMode: 'contain', width: this.getScanImageWidth() }}
+                source={this.props.scanBarImage} />
         } else {
             return <View style={[this.getScanBarMargin(), {
                 backgroundColor: this.props.scanBarColor,
                 height: this.props.scanBarHeight,
-            }]}/>
+            }]} />
         }
     }
 
     render() {
         const animatedStyle = {
             transform: [
-                {translateY: this.state.animatedValue}
+                { translateY: this.state.animatedValue }
             ]
         };
 
         return (
             <View
-                onLayout={({nativeEvent: e}) => this.measureTotalSize(e)}
+                onLayout={({ nativeEvent: e }) => this.measureTotalSize(e)}
                 style={[styles.container, this.getBottomMenuHeight()]}>
 
                 <View style={[styles.viewfinder, this.getRectSize()]}
-                      onLayout={({nativeEvent: e}) => this.measureRectPosition(e)}
+                    onLayout={({ nativeEvent: e }) => this.measureRectPosition(e)}
                 >
 
                     {/*扫描框边线*/}
@@ -263,7 +264,7 @@ class QRScannerRectView extends Component {
                             borderLeftWidth: this.props.cornerBorderWidth,
                             borderTopWidth: this.props.cornerBorderWidth,
                         }
-                    ]}/>
+                    ]} />
 
                     {/*扫描框转角-右上角*/}
                     <View style={[
@@ -274,7 +275,7 @@ class QRScannerRectView extends Component {
                             borderRightWidth: this.props.cornerBorderWidth,
                             borderTopWidth: this.props.cornerBorderWidth,
                         }
-                    ]}/>
+                    ]} />
 
                     {/*加载动画*/}
                     {this.renderLoadingIndicator()}
@@ -288,7 +289,7 @@ class QRScannerRectView extends Component {
                             borderLeftWidth: this.props.cornerBorderWidth,
                             borderBottomWidth: this.props.cornerBorderWidth,
                         }
-                    ]}/>
+                    ]} />
 
                     {/*扫描框转角-右下角*/}
                     <View style={[
@@ -299,7 +300,7 @@ class QRScannerRectView extends Component {
                             borderRightWidth: this.props.cornerBorderWidth,
                             borderBottomWidth: this.props.cornerBorderWidth,
                         }
-                    ]}/>
+                    ]} />
                 </View>
 
                 <View style={[
@@ -309,7 +310,7 @@ class QRScannerRectView extends Component {
                         bottom: this.getTopMaskHeight(),
                         width: this.state.topWidth,
                     }
-                ]}/>
+                ]} />
 
                 <View style={[
                     this.getBackgroundColor(),
@@ -318,7 +319,7 @@ class QRScannerRectView extends Component {
                         height: this.getSideMaskHeight(),
                         width: this.getSideMaskWidth(),
                     }
-                ]}/>
+                ]} />
 
                 <View style={[
                     this.getBackgroundColor(),
@@ -326,7 +327,7 @@ class QRScannerRectView extends Component {
                     {
                         height: this.getSideMaskHeight(),
                         width: this.getSideMaskWidth(),
-                    }]}/>
+                    }]} />
 
                 <View style={[
                     this.getBackgroundColor(),
@@ -334,9 +335,9 @@ class QRScannerRectView extends Component {
                     {
                         top: this.getBottomMaskHeight(),
                         width: this.state.topWidth,
-                    }]}/>
+                    }]} />
 
-                <View style={{position: 'absolute', bottom: this.props.hintTextPosition}}>
+                <View style={{ position: 'absolute', bottom: this.props.hintTextPosition }}>
                     <Text style={this.props.hintTextStyle}>{this.props.hintText}</Text>
                 </View>
 
@@ -362,7 +363,7 @@ class QRScannerRectView extends Component {
 /**
  * 扫描界面
  */
-export default class QRScannerView extends Component {
+class QRScannerView extends Component {
     static propTypes = {
         maskColor: PropTypes.string,
         borderColor: PropTypes.string,
@@ -393,23 +394,29 @@ export default class QRScannerView extends Component {
 
     constructor(props) {
         super(props);
-        //通过这句代码屏蔽 YellowBox
-        console.disableYellowBox = true;
     }
 
     render() {
         return (
-            <View style={{flex: 1}}>
+            <View style={{ flex: 1 }}>
                 <Camera
+                    scanAreaLimit={true}
+                    scanAreaX={0}
+                    scanAreaY={0}
+                    scanAreaWidth={10}
+                    scanAreaHeight={10}
                     onBarCodeRead={this.props.onScanResultReceived}
-                    style={{flex: 1}}
+                    style={{ flex: 1 }}
+                    flashMode={Camera.constants.FlashMode.on}
+                    notAuthorizedView={this.props.notAuthorizedView}
                 >
+
                     {/*绘制顶部标题栏组件*/}
                     {IS_ANDROID ? this.props.renderTopBarView() : null}
 
                     {/*绘制扫描遮罩*/}
                     <QRScannerRectView
-                        maskColor={this.props.maskColor}
+                        // maskColor={this.props.maskColor}
                         cornerColor={this.props.cornerColor}
                         borderColor={this.props.borderColor}
                         rectHeight={this.props.rectHeight}
@@ -434,12 +441,19 @@ export default class QRScannerView extends Component {
 
                     {/*绘制顶部标题栏组件*/}
                     {!IS_ANDROID ? this.props.renderTopBarView() : null}
+                    {/* var {opacity: opacity, backgroundColor:backgroundColor} = this.props.bottomMenuStyle; */}
+                    <SafeAreaView style={[this.props.bottomMenuStyle, {
+                        position: "absolute", bottom: 0, left: 0, right: 0,
+                    }]}>
+                        <View style={[this.props.bottomMenuStyle, {
 
-                    {/*绘制底部操作栏*/}
-                    <View style={[styles.buttonsContainer, this.props.bottomMenuStyle]}>
-                        {this.props.renderBottomMenuView()}
-                    </View>
-
+                        }, { height: this.props.bottomMenuHeight }]}>
+                            {/*绘制底部操作栏*/}
+                            <View style={[styles.buttonsContainer]}>
+                                {this.props.renderBottomMenuView()}
+                            </View>
+                        </View>
+                    </SafeAreaView>
                 </Camera>
             </View>
         );
@@ -450,8 +464,7 @@ export default class QRScannerView extends Component {
 const styles = StyleSheet.create({
     buttonsContainer: {
         position: 'absolute',
-        height: 100,
-        bottom: 0,
+        top: 0,
         left: 0,
         right: 0,
     },
@@ -504,3 +517,5 @@ const styles = StyleSheet.create({
         bottom: 0,
     }
 });
+
+export { QRScannerView }
